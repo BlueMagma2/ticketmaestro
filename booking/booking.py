@@ -1,6 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist
 from booking.utils.singleton import Singleton
-from booking.models import Venue, Event, Section, Row, Seat
+from booking.models import Venue, Event, Section, Row, Seat, Book
 
 
 @Singleton
@@ -32,11 +32,11 @@ class _BookingEvent:
         self.sections = []
 
         for section in self.venue.section_set.all().order_by("rank"):
-            section_data = {"name":section.label, "rank":section.rank, "max_adjacent_seat":0, "seats_available": 0, "rows": []}
+            section_data = {"pk":section.pk, "name":section.label, "rank":section.rank, "max_adjacent_seat":0, "seats_available": 0, "rows": []}
             self.sections.append(section_data)
 
             for row in section.row_set.all().order_by("rank"):
-                row_data = {"name":row.label, "rank":row.rank, "max_adjacent_seat":0, "seats_available": 0}
+                row_data = {"pk":row.pk, "name":row.label, "rank":row.rank, "max_adjacent_seat":0, "seats_available": 0}
                 section_data["rows"].append(row_data)
 
                 # we count how many seats and adjacent seats are available
@@ -47,7 +47,8 @@ class _BookingEvent:
 
     def update_row_data(self, row, row_data):
         """ update row_data with row data """
-        seats_available = row.seat_set.all().filter(booked=False).order_by("number")
+        already_booked_pks = Book.objects.filter(event=self.event).filter(booked=True).values_list("seat", flat=True)
+        seats_available = row.seat_set.order_by("number").exclude(id__in=already_booked_pks)
         row_data["seats_available"] = seats_available.count()
         row_data["max_adjacent_seat"] = 0
 

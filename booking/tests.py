@@ -1,6 +1,6 @@
 from django.test import TestCase
 from booking.booking import Booking
-from booking.models import Venue, Event, Section, Row, Seat
+from booking.models import Venue, Event, Section, Row, Seat, Book
 
 
 class TestBooking(TestCase):
@@ -25,17 +25,18 @@ class TestBooking(TestCase):
             section = self.sections[section_index]
             self.rows[section.label] = []
             for i in range(5):
-                row = Row.objects.create(section=section, label="east", rank=i)
+                row = Row.objects.create(section=section, label=i, rank=i)
                 self.rows[section.label].append(row)
                 for s in range(5):
+                    seat = Seat.objects.create(row=row, number=s)
                     if section_index == 2:
-                        Seat.objects.create(row=row, number=s, booked=True, booked_for="the queen")
+                        Book.objects.create(event=self.event1, seat=seat, booked=True, booked_for="the queen")
                     elif section_index == 4 and i == 0:
-                        Seat.objects.create(row=row, number=s, booked=True, booked_for="some first class fan")
+                        Book.objects.create(event=self.event1, seat=seat, booked=True, booked_for="some first class fan")
                     elif section_index == 0 and s == 2:
-                        Seat.objects.create(row=row, number=s, booked=True, booked_for="middle watcher")
+                        Book.objects.create(event=self.event1, seat=seat, booked=True, booked_for="middle watcher")
                     else:
-                        Seat.objects.create(row=row, number=s, booked=False, booked_for="")
+                        Book.objects.create(event=self.event1, seat=seat, booked=False, booked_for="")
 
     def test_singleton(self):
         """ make sure booking is a singleton """
