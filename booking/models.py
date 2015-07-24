@@ -50,11 +50,15 @@ class Row(models.Model):
 class Seat(models.Model):
     row = models.ForeignKey(Row)
     number = models.IntegerField()
-    booked = models.BooleanField(editable=False)
-    booked_for = models.CharField(max_length=50)
 
     class Meta:
         ordering = ["number"]
 
     def __str__(self):
         return self.number
+
+class Book(models.Model):
+    event = models.ForeignKey(Event)
+    seat = models.ForeignKey(Seat)
+    booked = models.BooleanField(editable=False)
+    booked_for = models.CharField(max_length=50)
