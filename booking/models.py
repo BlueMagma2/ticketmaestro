@@ -24,7 +24,7 @@ class Event(models.Model):
 
 
 class Section(models.Model):
-    event = models.ForeignKey(Event)
+    venue = models.ForeignKey(Venue)
     label = models.CharField(max_length=20)
     rank = models.IntegerField()
 
