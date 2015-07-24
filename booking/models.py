@@ -60,5 +60,5 @@ class Seat(models.Model):
 class Book(models.Model):
     event = models.ForeignKey(Event)
     seat = models.ForeignKey(Seat)
-    booked = models.BooleanField(editable=False)
-    booked_for = models.CharField(max_length=50)
+    booked = models.BooleanField(editable=False, default=False)
+    booked_for = models.CharField(max_length=50, default="")
