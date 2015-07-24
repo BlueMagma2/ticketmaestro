@@ -40,22 +40,25 @@ class _BookingEvent:
                 section_data["rows"].append(row_data)
 
                 # we count how many seats and adjacent seats are available
-                seats_available = row.seat_set.all().filter(booked=False).order_by("number")
-                row_data["seats_available"] = seats_available.count()
+                self.update_row_data(row, row_data)
                 section_data["seats_available"] += row_data["seats_available"]
-
-                counter = 0 # count adjacent seat
-                last_number = -1 # seat number of the previous iteration
-                for seat in seats_available:
-                    if seat.number > last_number + 1:
-                        if counter > row_data["max_adjacent_seat"]:
-                            row_data["max_adjacent_seat"] = counter
-                        counter = 0
-                    last_number = seat.number
-                    counter += 1
-
-                if counter > row_data["max_adjacent_seat"]:
-                    row_data["max_adjacent_seat"] = counter
-
                 if row_data["max_adjacent_seat"] > section_data["max_adjacent_seat"]:
                     section_data["max_adjacent_seat"] = row_data["max_adjacent_seat"]
+
+    def update_row_data(self, row, row_data):
+        """ update row_data with row data """
+        seats_available = row.seat_set.all().filter(booked=False).order_by("number")
+        row_data["seats_available"] = seats_available.count()
+        row_data["max_adjacent_seat"] = 0
+
+        counter = 0 # count adjacent seat
+        last_number = -1 # seat number of the previous iteration
+        for seat in seats_available:
+            if seat.number > last_number + 1:
+                if counter > row_data["max_adjacent_seat"]:
+                    row_data["max_adjacent_seat"] = counter
+                counter = 0
+            last_number = seat.number
+            counter += 1
+        if counter > row_data["max_adjacent_seat"]:
+            row_data["max_adjacent_seat"] = counter
