@@ -189,7 +189,7 @@ class _BookingEvent:
                         if len(row_seat_set) == seat_count:
                             result = self.book_specific_seat(section_label, row_seat_set, book_for)
                             if result:
-                                return True
+                                return row_seat_set
                             else:
                                 seat_refused = True
                                 break
