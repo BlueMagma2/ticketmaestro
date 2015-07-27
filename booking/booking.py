@@ -170,3 +170,45 @@ class _BookingEvent:
         print(result)
         self.requests.pop(request_id)
         return result
+
+    def _book_best_adjacent_in_section(self, section, seat_count, book_for):
+        """ internal fonction : book best availalble seat with section_data as a parameter instead section_label """
+        seat_refused = False
+        while True: # make sure we try again if our best seat are taken just before we take them
+            if section["max_adjacent_seat"] < seat_count:
+                return False
+            for row in section["rows"]:
+                if row["max_adjacent_seat"] >= seat_count:
+                    row_seat_set = []
+                    for seat in Seat.objects.filter(row__pk=row["pk"]):
+                        booked = Book.objects.filter(event=self.event).filter(seat=seat).filter(booked=True).count() == 1
+                        if not booked:
+                            row_seat_set.append((row["name"], seat.number))
+                        else:
+                            row_seat_seat = []
+                        if len(row_seat_set) == seat_count:
+                            result = self.book_specific_seat(section_label, row_seat_set, book_for)
+                            if result:
+                                return True
+                            else:
+                                seat_refused = True
+                                break
+            if seat_refused:
+                break
+
+    def book_best_adjacent_in_section(self, section_label, seat_count, book_for):
+        """ book the best available seat_count adjacent seat for the section """
+        for section in self.sections:
+            if section["name"] == section_label:
+                return self._book_best_adjacent_in_section(section, seat_count, book_for)
+        return False
+
+    def book_best_adjacent(self, seat_count, book_for):
+        """ book the best available seat_count adjacent seat for the event """
+        result = False
+        for section in self.sections:
+            if section["max_adjacent_seat"] < seat_count:
+                result = self._book_best_adjacent_in_section(section, seat_count, book_for)
+                if result:
+                    break
+        return result
