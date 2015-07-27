@@ -2,7 +2,6 @@ import uuid
 import time
 import queue
 from threading import Thread
-from django.db import connection
 from booking.utils.singleton import Singleton
 from booking.models import Venue, Event, Section, Row, Seat, Book
 
@@ -75,10 +74,14 @@ class _BookingEvent:
         while not self.queue.empty():
             if not self.queue.empty():
                 seats_set = self.queue.get()
-                seats = seats_set[0]
-                book_for = seats_set[1]
-                request_id = seats_set[2]
+                seats = self.get_seats_from_labels(seats_set[0], seats_set[1])
+                book_for = seats_set[2]
+                request_id = seats_set[3]
                 seat_already_booked = False
+                if not seats:
+                    self.requests[request_id] = False
+                    self.queue.task_done()
+                    continue
                 book = []
                 for seat in seats:
                     booked = Book.objects.filter(event=self.event).filter(seat=seat).filter(booked=True).count() == 1
@@ -106,3 +109,34 @@ class _BookingEvent:
 
                 self.requests[request_id] = True
                 self.queue.task_done()
+
+    def get_seats_from_labels(self, section_label, row_seat_set):
+        seats = []
+
+        try:
+            section = Section.objects.get(venue=self.venue, label=section_label)
+            for row_seat in row_seat_set:
+                row = section.row_set.get(label=row_seat[0])
+                seat = row.seat_set.get(number=row_seat[1])
+                seats.append(seat.id)
+        except:
+            print("impossible de trouver les object")
+            return []
+
+        return seats
+
+
+    def book_specific_seat(self, section_label, row_seat_set, book_for):
+        """ add seats to the queue """
+        request_id = uuid.uuid1()
+        self.queue.put((section_label, row_seat_set, book_for, request_id))
+        if not self.thread.isAlive():
+            self.thread = Thread(target=self.unqueue)
+            self.thread.start()
+        while request_id not in self.requests:
+            time.sleep(1) # IDEA : could be dependant of queue size to avoid reloading too often
+
+        result = self.requests[request_id]
+        print(result)
+        self.requests.pop(request_id)
+        return result
