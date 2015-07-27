@@ -94,3 +94,16 @@ class TestBooking(TransactionTestCase):
 
 
         self.assertEqual(booking_event.book_specific_seat("west", [(0,0),(0,1)], "some other guy"), False)
+
+    def test_book_best_seats(self):
+        """ test the three function for booking the best adjacent seats """
+        booking_event = Booking.Instance().get_event(self.event1.pk)
+        tree = booking_event.sections
+
+        self.assertEqual(booking_event.book_best_adjacent_in_section("first class", 3, "three in a row"), [('1',0),('1',1),('1',2)])
+        self.assertEqual(booking_event.book_best_adjacent_in_section("first class", 4, "three in a row"), [('2',0),('2',1),('2',2),('2',3)])
+        self.assertEqual(booking_event.book_best_adjacent_in_section("first class", 2, "two in a row"), [('1',3),('1',4)])
+        booking_event.book_best_adjacent_in_section("first class", 4, "three in a row")
+        booking_event.book_best_adjacent_in_section("first class", 4, "three in a row")
+        self.assertEqual(booking_event.book_best_adjacent_in_section("first class", 2, "no more seats in first class"), False)
+        self.assertEqual(booking_event.book_best_adjacent(2, "two in a row"), ("east", [('0',0),('0',1)]))
