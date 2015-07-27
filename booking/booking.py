@@ -1,4 +1,8 @@
-from django.core.exceptions import ObjectDoesNotExist
+import uuid
+import time
+import queue
+from threading import Thread
+from django.db import connection
 from booking.utils.singleton import Singleton
 from booking.models import Venue, Event, Section, Row, Seat, Book
 
@@ -27,6 +31,9 @@ class _BookingEvent:
         except:
             raise Exception("No Event for this primary key in the database")
         self.venue = self.event.venue
+        self.queue = queue.Queue()
+        self.requests = {}
+        self.thread = Thread(target=self.unqueue)
 
         # construct tree of sections/rows/seats to access information faster
         self.sections = []
@@ -63,3 +70,39 @@ class _BookingEvent:
             counter += 1
         if counter > row_data["max_adjacent_seat"]:
             row_data["max_adjacent_seat"] = counter
+
+    def unqueue(self):
+        while not self.queue.empty():
+            if not self.queue.empty():
+                seats_set = self.queue.get()
+                seats = seats_set[0]
+                book_for = seats_set[1]
+                request_id = seats_set[2]
+                seat_already_booked = False
+                book = []
+                for seat in seats:
+                    booked = Book.objects.filter(event=self.event).filter(seat=seat).filter(booked=True).count() == 1
+                    if booked:
+                        print("already booked")
+                        self.requests[request_id] = False
+                        self.queue.task_done()
+                        seat_already_booked = True
+                        break
+                    else:
+                        if Book.objects.filter(event=self.event).filter(seat=seat).filter(booked=False).count() != 0:
+                            book.append(Book.objects.get(event=self.event, seat=seat, booked=False))
+                        else:
+                            book.append(Book.objects.create(event=self.event, seat=seat, booked=False))
+                if seat_already_booked:
+                    continue
+                rows = []
+                for b in book:
+                    b.booked = True
+                    b.booked_for = book_for
+                    b.save()
+                    if not seat.row in rows:
+                        rows.append(seat.row)
+                # TODO : update tree
+
+                self.requests[request_id] = True
+                self.queue.task_done()
