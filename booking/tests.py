@@ -1,9 +1,10 @@
-from django.test import TestCase
+import time
+from django.test import TransactionTestCase
 from booking.booking import Booking
 from booking.models import Venue, Event, Section, Row, Seat, Book
 
 
-class TestBooking(TestCase):
+class TestBooking(TransactionTestCase):
     """ test that booking is working like expected """
 
     def setUp(self):
@@ -74,3 +75,11 @@ class TestBooking(TestCase):
 
         self.assertEqual(tree[3]["seats_available"], 25)
         self.assertEqual(tree[3]["max_adjacent_seat"], 5)
+
+    def test_book_specific_seat(self):
+        """ make sure the function 'book specific seat' is correctly working """
+        print(Section.objects.all())
+        booking_event = Booking.Instance().get_event(self.event1.pk)
+        self.assertEqual(booking_event.book_specific_seat("VIP", [(0,0),(0,1)], "some vip"), False)
+        self.assertEqual(booking_event.book_specific_seat("west", [(0,0),(0,1)], "some guy"), True)
+        self.assertEqual(booking_event.book_specific_seat("west", [(0,0),(0,1)], "some other guy"), False)

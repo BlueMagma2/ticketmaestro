@@ -98,13 +98,11 @@ class _BookingEvent:
                             book.append(Book.objects.create(event=self.event, seat=seat, booked=False))
                 if seat_already_booked:
                     continue
-                rows = []
                 for b in book:
                     b.booked = True
                     b.booked_for = book_for
                     b.save()
-                    if not seat.row in rows:
-                        rows.append(seat.row)
+
                 # TODO : update tree
 
                 self.requests[request_id] = True
@@ -114,6 +112,7 @@ class _BookingEvent:
         seats = []
 
         try:
+            print(Section.objects.all())
             section = Section.objects.get(venue=self.venue, label=section_label)
             for row_seat in row_seat_set:
                 row = section.row_set.get(label=row_seat[0])
