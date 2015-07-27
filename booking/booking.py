@@ -187,7 +187,7 @@ class _BookingEvent:
                         else:
                             row_seat_seat = []
                         if len(row_seat_set) == seat_count:
-                            result = self.book_specific_seat(section_label, row_seat_set, book_for)
+                            result = self.book_specific_seat(section["name"], row_seat_set, book_for)
                             if result:
                                 return row_seat_set
                             else:
@@ -207,8 +207,9 @@ class _BookingEvent:
         """ book the best available seat_count adjacent seat for the event """
         result = False
         for section in self.sections:
-            if section["max_adjacent_seat"] < seat_count:
+            if section["max_adjacent_seat"] >= seat_count:
                 result = self._book_best_adjacent_in_section(section, seat_count, book_for)
                 if result:
+                    result = (section["name"], result)
                     break
         return result
