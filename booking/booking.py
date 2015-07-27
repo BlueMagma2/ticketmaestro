@@ -70,6 +70,34 @@ class _BookingEvent:
         if counter > row_data["max_adjacent_seat"]:
             row_data["max_adjacent_seat"] = counter
 
+    def update_booking_tree(self, rows):
+        if rows:
+            section = rows[0].section
+            section_data = {}
+            for data in self.sections:
+                if data["pk"] == section.pk:
+                    section_data = data
+                    break
+            if not section_data:
+                raise Exception("booking tree error")
+            for row in rows:
+                row_data = {}
+                for data in section_data["rows"]:
+                    if data["pk"] == row.pk:
+                        row_data = data
+                        break
+                if not row_data:
+                    raise Exception("booking tree error")
+                seat_available = row_data["seats_available"]
+                self.update_row_data(row, row_data)
+                if seat_available > row_data["seats_available"]:
+                    section_data["seats_available"] -= seat_available - row_data["seats_available"]
+            section_data["max_adjacent_seat"] = 0
+            for row_data in section_data["rows"]:
+                if row_data["max_adjacent_seat"] > section_data["max_adjacent_seat"]:
+                    section_data["max_adjacent_seat"] = row_data["max_adjacent_seat"]
+
+
     def unqueue(self):
         while not self.queue.empty():
             if not self.queue.empty():
@@ -98,12 +126,16 @@ class _BookingEvent:
                             book.append(Book.objects.create(event=self.event, seat=seat, booked=False))
                 if seat_already_booked:
                     continue
+
+                rows  = []
                 for b in book:
                     b.booked = True
                     b.booked_for = book_for
                     b.save()
+                    if not b.seat.row in rows:
+                        rows.append(b.seat.row)
 
-                # TODO : update tree
+                self.update_booking_tree(rows)
 
                 self.requests[request_id] = True
                 self.queue.task_done()
@@ -112,7 +144,6 @@ class _BookingEvent:
         seats = []
 
         try:
-            print(Section.objects.all())
             section = Section.objects.get(venue=self.venue, label=section_label)
             for row_seat in row_seat_set:
                 row = section.row_set.get(label=row_seat[0])

@@ -78,8 +78,19 @@ class TestBooking(TransactionTestCase):
 
     def test_book_specific_seat(self):
         """ make sure the function 'book specific seat' is correctly working """
-        print(Section.objects.all())
         booking_event = Booking.Instance().get_event(self.event1.pk)
+        tree = booking_event.sections
         self.assertEqual(booking_event.book_specific_seat("VIP", [(0,0),(0,1)], "some vip"), False)
         self.assertEqual(booking_event.book_specific_seat("west", [(0,0),(0,1)], "some guy"), True)
+        self.assertEqual(tree[5]["seats_available"], 23)
+        self.assertEqual(tree[5]["max_adjacent_seat"], 5)
+
+        self.assertEqual(booking_event.book_specific_seat("west", [(1,2)], "some guy"), True)
+        self.assertEqual(booking_event.book_specific_seat("west", [(2,2)], "some guy"), True)
+        self.assertEqual(booking_event.book_specific_seat("west", [(3,2)], "some guy"), True)
+        self.assertEqual(booking_event.book_specific_seat("west", [(4,2)], "some guy"), True)
+        self.assertEqual(tree[5]["seats_available"], 19)
+        self.assertEqual(tree[5]["max_adjacent_seat"], 3)
+
+
         self.assertEqual(booking_event.book_specific_seat("west", [(0,0),(0,1)], "some other guy"), False)
