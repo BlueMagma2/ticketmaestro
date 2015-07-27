@@ -71,6 +71,7 @@ class _BookingEvent:
             row_data["max_adjacent_seat"] = counter
 
     def update_booking_tree(self, rows):
+        """ update booking tree (self.sections) by updating the given rows """
         if rows:
             section = rows[0].section
             section_data = {}
@@ -167,7 +168,6 @@ class _BookingEvent:
             time.sleep(1) # IDEA : could be dependant of queue size to avoid reloading too often
 
         result = self.requests[request_id]
-        print(result)
         self.requests.pop(request_id)
         return result
 
